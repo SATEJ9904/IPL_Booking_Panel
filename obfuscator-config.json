@@ -1,0 +1,11 @@
+{
+    "compact": true,
+    "stringArray": true,
+    "controlFlowFlattening": false,
+    "deadCodeInjection": false,
+    "transformObjectKeys": false,
+    "identifierNamesGenerator": "hexadecimal",
+    "selfDefending": true,
+    "disableConsoleOutput": true
+  }
+  
