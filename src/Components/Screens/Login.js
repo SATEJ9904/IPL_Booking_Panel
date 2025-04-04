@@ -124,7 +124,7 @@ const Login = ({ onLoginSuccess }) => {
             );
 
             const { token, username } = response.data;
-
+            console.log(response.data)
             // Validate the token structure before storing
             if (!token || !jwtDecode(token).exp) {
                 throw new Error("Invalid token received");

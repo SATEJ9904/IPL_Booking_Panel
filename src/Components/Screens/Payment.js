@@ -215,231 +215,321 @@ const PaymentPage = () => {
   const handlePrintReceipt = async () => {
     setIsPrinting(true);
     try {
-      // Create the print content HTML string
-      const printContent = `
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>FunPark Ticket</title>
-    <style>
-      @page {
-        size: 5cm 13.7cm;
-        margin: 0;
-      }
-      body {
-        font-family: 'Roboto', sans-serif;
-        margin: 0;
-        padding: 0;
-        width: 5cm;
-        height: 13.7cm;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        font-size: 9px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-      .header {
-        text-align: center;
-        margin-bottom: 2px;
-        font-weight: bold;
-        color: #000;
-      }
-      .title {
-        background-color: white;
-        color:rgb(0, 0, 0);
-        padding: 8px;
-        text-align: center;
-        font-weight: 600;
-        margin-bottom: 7%;
-        font-size: 10px;
-      }
-      .match-info {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 4px;
-        border-radius: 4px;
-        margin-bottom: 4px;
-        font-weight: bold;
-      }
-      .vs {
-        color:rgb(0, 0, 0);
-        font-weight: bold;
-      }
-      .customer-info {
-        padding: 8px 4px 4px 4px;
-        border-radius: 4px;
-        margin-bottom: 4px;
-      }
-      .section-title {
-        font-weight: bold;
-        margin-bottom: 1px;
-      }
-      .ticket-section {
-        margin-bottom: 4px;
-      }
-      .package-row {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 2px;
-      }
-      .seats-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 2px;
-        margin-top: 2px;
-        max-height: 60px;
-        overflow-y: auto;
-      }
-      .seat {
-        background-color: #f0f0f0;
-        padding: 0 4px;
-        border-radius: 2px;
-        font-size: 12px;
-        font-weight: 600;
-      }
-      .payment-summary {
-        padding: 4px;
-        background-color: #f5f7fa;
-        border-radius: 4px;
-        margin-bottom: 4px;
-      }
-      .payment-title {
-        font-weight: bold;
-        margin-bottom: 12px;
-      }
-      .footer {
-        text-align: center;
-      }
-      .venue {
-        font-weight: 500;
-        display: block;
-      }
-      .contact {
-        display: block;
-        margin-top: 2px;
-      }
-      .thank-you {
-        display: block;
-        margin-top: 25px;
-      }
-      .bold {
-        font-weight: bold;
-      }
-      .medium {
-        font-weight: 500;
-      }
-    </style>
-  </head>
-  <body>
-    <h1 class="title">FUNPARK TICKET</h1>
-    
-    <div class="header">
-      ${formatDate(date)} | ${formatTime(fromTime)}
-    </div>
-    
-    <div class="match-info">
-      <span class="bold">${team1Data.short}</span>
-      <span class="vs">VS</span>
-      <span class="bold">${team2Data.short}</span>
-    </div>
-    
-    <div class="customer-info">
-      <div class="section-title">CUSTOMER INFORMATION</div>
-      <div><span class="bold">Name:</span> ${customerName}</div>
-      <div style="margin-top: 2px"><span class="bold">Phone:</span> +91 ${phoneNumber}</div>
-    </div>
-    
-    <div class="ticket-section">
-      <div class="section-title">TICKET DETAILS:</div>
-      ${Object.entries(seatsByPackage).map(([packageName, packageSeats]) =>
-        `<div>
-          <div class="package-row">
-            <span>${packageName} (${packageSeats.length})</span>
-            <span class="medium">₹${(packageSeats[0].price * packageSeats.length).toLocaleString('en-IN')}</span>
-          </div>
-          <div class="seats-container">
-            ${packageSeats.map(seat =>
-          `<div class="seat">${seat.seatNumber}</div>`
-        ).join('')}
-          </div>
-        </div>`
-      ).join('')}
-    </div>
-    
-    <div class="payment-summary">
-      <div class="payment-title">PAYMENT SUMMARY</div>
-      <div class="package-row">
-        <span>Subtotal:</span>
-        <span>₹${total.toLocaleString('en-IN')}</span>
-      </div>
-      <div class="package-row" style="margin-top: 2px">
-        <span>Total Amount:</span>
-        <span class="bold">₹${total.toLocaleString('en-IN')}</span>
-      </div>
-    </div>
-    
-    <div class="footer">
-      <span class="venue">VENUE: Near Alliance Hospital, Magdum Nagar, Ichalkaranji</span>
-      <span class="contact">CONTACT: +91 7030009494</span>
-      <span class="thank-you">Thank you for your booking!</span>
-    </div>
-  </body>
-</html>
-      `;
+      const printContent = generatePrintContent(); // Function to generate HTML content
 
-      // Create a hidden iframe for printing
-      const iframe = document.createElement('iframe');
-      iframe.style.position = 'absolute';
-      iframe.style.width = '5cm';
-      iframe.style.height = '13.7cm';
-      iframe.style.left = '-9999px';
-      iframe.style.top = '0';
-      iframe.style.border = 'none';
+      // For mobile devices - use a more reliable approach
+      if (isMobile || isTablet) {
+        await printForMobile(printContent);
+      } else {
+        // For desktop - use standard printing
+        await printForDesktop(printContent);
+      }
 
-      document.body.appendChild(iframe);
-
-      // Write content to iframe
-      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-      iframeDoc.open();
-      iframeDoc.write(printContent);
-      iframeDoc.close();
-
-      // Wait for content to load
-      await new Promise(resolve => {
-        iframe.onload = resolve;
-        setTimeout(resolve, 200); // Fallback timeout
+      setSnackbar({
+        open: true,
+        message: "Receipt printed successfully!",
+        severity: "success",
       });
-
-      // Focus and print
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-
-      // Clean up after printing
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
-
     } catch (error) {
-      console.error("Printing failed:", error);
-      // Fallback to basic window print
-      window.print();
+      console.error("Printing error:", error);
+      setSnackbar({
+        open: true,
+        message: "Printing failed. Please try again or take a screenshot.",
+        severity: "error",
+      });
     } finally {
       setIsPrinting(false);
-      setOpenPrintDialog(false);
-      navigate(-1)
     }
   };
 
+  const generatePrintContent = () => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Booking Receipt</title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          @page {
+            size: auto;
+            margin: 0;
+          }
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            width: 100%;
+            -webkit-print-color-adjust: exact;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          .match-info {
+            text-align: center;
+            margin: 10px 0;
+          }
+          .teams {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+          }
+          .customer-info {
+            margin: 10px 0;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+          }
+          .ticket-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+          }
+          .seat-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+          }
+          .seat-pill {
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+          }
+          .payment-summary {
+            margin: 15px 0;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+          }
+          .footer {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 10px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div style="font-size: 18px; font-weight: bold;">FUNPARK TICKET</div>
+          <div style="font-size: 12px;">SEASON 2025 | OFFICIAL BOOKING RECEIPT</div>
+        </div>
+  
+        <div class="match-info">
+          <div style="font-size: 14px;">${formatDate(date)} | ${formatTime(fromTime)}</div>
+          <div class="teams">
+            <div style="font-weight: bold;">${team1Data.short}</div>
+            <div style="color: #1976d2; font-weight: bold;">vs</div>
+            <div style="font-weight: bold;">${team2Data.short}</div>
+          </div>
+          <div style="font-size: 12px;">Near Alliance Hospital, Magdum Nagar, Ichalkaranji</div>
+        </div>
+  
+        <div class="customer-info">
+          <div style="font-weight: bold; margin-bottom: 5px;">CUSTOMER INFORMATION</div>
+          <div>Name: ${customerName}</div>
+          <div>Mobile: +91 ${phoneNumber}</div>
+          <div>Booking ID: ${generateBookingId()}</div>
+        </div>
+  
+        <div style="margin: 15px 0;">
+          <div style="font-weight: bold; margin-bottom: 8px;">TICKET DETAILS</div>
+          ${Object.entries(seatsByPackage).map(([packageName, packageSeats]) => `
+            <div class="ticket-row">
+              <div>
+                <div style="font-weight: bold;">${packageName} (${packageSeats.length})</div>
+                <div class="seat-pills">
+                  ${packageSeats.map(seat => `<span class="seat-pill">${seat.seatNumber}</span>`).join('')}
+                </div>
+              </div>
+              <div>₹${(packageSeats[0].price * packageSeats.length).toLocaleString('en-IN')}</div>
+            </div>
+          `).join('')}
+        </div>
+  
+        <div class="payment-summary">
+          <div style="font-weight: bold; margin-bottom: 8px;">PAYMENT SUMMARY</div>
+          <div class="ticket-row">
+            <div>Subtotal:</div>
+            <div>₹${total.toLocaleString('en-IN')}</div>
+          </div>
+          <div class="ticket-row">
+            <div>Taxes:</div>
+            <div>₹0</div>
+          </div>
+          <div class="ticket-row" style="font-weight: bold; margin-top: 5px; border-top: 1px dashed #ccc; padding-top: 5px;">
+            <div>Total Amount:</div>
+            <div>₹${total.toLocaleString('en-IN')}</div>
+          </div>
+        </div>
+  
+        <div class="footer">
+          <div>Present this receipt at the stadium entrance</div>
+          <div>Gates open 2 hours before match</div>
+          <div>For assistance: +91 7030009494</div>
+          <div style="margin-top: 8px;">Tickets are non-refundable and non-transferable</div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  const printForMobile = async (content) => {
+    // Try to open a new window first
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(content);
+      printWindow.document.close();
+
+      // Wait for content to load
+      await new Promise(resolve => {
+        printWindow.onload = () => resolve();
+      });
+
+      try {
+        printWindow.print();
+        // Close after printing (with delay for iOS)
+        setTimeout(() => printWindow.close(), 1000);
+      } catch (e) {
+        printWindow.close();
+        // Fallback to iframe method
+        await printWithIframe(content);
+      }
+    } else {
+      // If popup blocked, use iframe method
+      await printWithIframe(content);
+    }
+  };
+
+  const printWithIframe = async (content) => {
+    return new Promise((resolve) => {
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = '0';
+
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } catch (e) {
+            console.error("Iframe printing failed:", e);
+            // Final fallback - show content and ask user to use browser print
+            const newWindow = window.open();
+            newWindow.document.open();
+            newWindow.document.write(`
+              ${content}
+              <script>
+                setTimeout(() => {
+                  alert('Please use your browser\'s print function (usually Ctrl+P or Share > Print)');
+                }, 500);
+              </script>
+            `);
+            newWindow.document.close();
+          }
+
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            resolve();
+          }, 1000);
+        }, 500);
+      };
+
+      document.body.appendChild(iframe);
+      iframe.contentDocument.open();
+      iframe.contentDocument.write(content);
+      iframe.contentDocument.close();
+    });
+  };
+
+  const printForDesktop = async (content) => {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.open();
+      printWindow.document.write(content);
+      printWindow.document.close();
+
+      // Wait for content to load
+      await new Promise(resolve => {
+        printWindow.onload = () => resolve();
+      });
+
+      printWindow.print();
+      setTimeout(() => printWindow.close(), 1000);
+    } else {
+      // Fallback for popup blockers
+      const iframe = document.createElement('iframe');
+      iframe.style.position = 'absolute';
+      iframe.style.left = '-9999px';
+      document.body.appendChild(iframe);
+
+      iframe.contentDocument.open();
+      iframe.contentDocument.write(content);
+      iframe.contentDocument.close();
+
+      setTimeout(() => {
+        iframe.contentWindow.print();
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+      }, 500);
+    }
+  };
+
+  const saveAsPDF = async () => {
+    try {
+      const content = generatePrintContent();
+      const blob = new Blob([content], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Funpark-Ticket-${generateBookingId()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setSnackbar({
+        open: true,
+        message: "Receipt saved as HTML file. You can print it later.",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Save failed:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to save receipt. Please try again.",
+        severity: "error",
+      });
+    }
+  };
+
+  // Helper functions remain the same
   const formatDate = (dateString) => {
-    const options = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' };
+    const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
     return new Date(dateString).toLocaleDateString('en-IN', options);
   };
 
   const formatTime = (timeString) => {
-    return timeString?.replace(/:00$/, '') || '';
+    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    }).toUpperCase();
   };
+
+  const generateBookingId = () => {
+    return `IPL${Math.floor(100000 + Math.random() * 900000)}`;
+  };
+
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
@@ -448,23 +538,23 @@ const PaymentPage = () => {
   const steps = ['Customer Details', 'Payment Method', 'Confirmation'];
 
   return (
-    <Box sx={{ 
-      minHeight: "100vh", 
-      bgcolor: "#f9f9f9", 
+    <Box sx={{
+      minHeight: "100vh",
+      bgcolor: "#f9f9f9",
       pt: isMobile ? 2 : 4,
       pb: isMobile ? 10 : 4
     }}>
       <Container maxWidth="lg" sx={{ px: isMobile ? 1 : 3 }}>
         {/* Header with back button */}
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
+        <Box sx={{
+          display: 'flex',
+          alignItems: 'center',
           mb: isMobile ? 2 : 3,
           position: 'relative'
         }}>
-          <IconButton 
+          <IconButton
             onClick={() => navigate(-1)}
-            sx={{ 
+            sx={{
               mr: 2,
               color: 'primary.main',
               bgcolor: 'rgba(25, 118, 210, 0.1)',
@@ -481,17 +571,17 @@ const PaymentPage = () => {
         </Box>
 
         {/* Progress Stepper */}
-        <Stepper 
-          activeStep={activeStep} 
-          alternativeLabel 
-          sx={{ 
+        <Stepper
+          activeStep={activeStep}
+          alternativeLabel
+          sx={{
             mb: isMobile ? 3 : 4,
             px: isMobile ? 0 : 2
           }}
         >
           {steps.map((label) => (
             <Step key={label}>
-              <StepLabel 
+              <StepLabel
                 sx={{
                   '& .MuiStepLabel-label': {
                     fontSize: isMobile ? '0.7rem' : '0.875rem',
@@ -518,9 +608,9 @@ const PaymentPage = () => {
               {activeStep === 0 && (
                 <Box>
                   {/* Contact Details */}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
                     mb: 3,
                     bgcolor: 'rgba(25, 118, 210, 0.05)',
                     p: 2,
@@ -531,7 +621,7 @@ const PaymentPage = () => {
                       Contact Information
                     </Typography>
                   </Box>
-                  
+
                   <Grid container spacing={isMobile ? 1 : 2}>
                     <Grid item xs={12} sm={6}>
                       <TextField
@@ -574,7 +664,7 @@ const PaymentPage = () => {
                       />
                     </Grid>
                   </Grid>
-                  
+
                   <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3 }}>
                     <Button
                       variant="contained"
@@ -597,9 +687,9 @@ const PaymentPage = () => {
               {activeStep === 1 && (
                 <Box>
                   {/* Payment Options */}
-                  <Box sx={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'center',
                     mb: 3,
                     bgcolor: 'rgba(25, 118, 210, 0.05)',
                     p: 2,
@@ -610,14 +700,14 @@ const PaymentPage = () => {
                       Payment Method
                     </Typography>
                   </Box>
-                  
+
                   <RadioGroup
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
                     sx={{ gap: 2 }}
                   >
-                    <Paper elevation={0} sx={{ 
-                      p: 2, 
+                    <Paper elevation={0} sx={{
+                      p: 2,
                       borderRadius: 2,
                       border: paymentMethod === 'gpay' ? '2px solid #1976d2' : '1px solid rgba(0,0,0,0.1)',
                       bgcolor: paymentMethod === 'gpay' ? 'rgba(25, 118, 210, 0.05)' : 'white',
@@ -640,8 +730,8 @@ const PaymentPage = () => {
                         }
                       />
                     </Paper>
-                    <Paper elevation={0} sx={{ 
-                      p: 2, 
+                    <Paper elevation={0} sx={{
+                      p: 2,
                       borderRadius: 2,
                       border: paymentMethod === 'cash' ? '2px solid #1976d2' : '1px solid rgba(0,0,0,0.1)',
                       bgcolor: paymentMethod === 'cash' ? 'rgba(25, 118, 210, 0.05)' : 'white',
@@ -665,7 +755,7 @@ const PaymentPage = () => {
                       />
                     </Paper>
                   </RadioGroup>
-                  
+
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 4 }}>
                     <Button
                       variant="outlined"
@@ -749,7 +839,7 @@ const PaymentPage = () => {
               position: isMobile ? undefined : 'sticky',
               top: isMobile ? undefined : 20
             }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ 
+              <Typography variant="h6" fontWeight="bold" gutterBottom sx={{
                 color: 'primary.main',
                 display: 'flex',
                 alignItems: 'center'
@@ -759,9 +849,9 @@ const PaymentPage = () => {
               </Typography>
 
               {/* Match Info */}
-              <Box sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
+              <Box sx={{
+                display: 'flex',
+                alignItems: 'center',
                 justifyContent: 'center',
                 mb: 3,
                 p: 2,
@@ -783,8 +873,8 @@ const PaymentPage = () => {
                     {team1Data.short}
                   </Typography>
                 </Box>
-                
-                <Box sx={{ 
+
+                <Box sx={{
                   mx: 2,
                   px: 2,
                   py: 1,
@@ -796,7 +886,7 @@ const PaymentPage = () => {
                 }}>
                   VS
                 </Box>
-                
+
                 <Box sx={{ textAlign: 'center', ml: 2 }}>
                   <Avatar
                     src={team2Data.logo}
@@ -835,8 +925,8 @@ const PaymentPage = () => {
 
               {Object.entries(seatsByPackage).map(([packageName, packageSeats]) => (
                 <Box key={packageName} mb={2}>
-                  <Box sx={{ 
-                    display: 'flex', 
+                  <Box sx={{
+                    display: 'flex',
                     alignItems: 'center',
                     mb: 1
                   }}>
@@ -933,7 +1023,7 @@ const PaymentPage = () => {
           p: 0,
           height: isMobile ? '70vh' : '12.5cm',
           overflow: 'auto',
-          margin:"0.4cm"
+          margin: "0.4cm"
         }}>
           {/* Receipt Container */}
           <Box
@@ -963,6 +1053,7 @@ const PaymentPage = () => {
               justifyContent: 'space-between',
               alignItems: 'center',
               p: '4px',
+              bgcolor: '#f5f7fa',
               borderRadius: '4px',
               mb: '4px'
             }}>
@@ -981,6 +1072,7 @@ const PaymentPage = () => {
             <Box sx={{
               pt: "8px",
               p: '4px',
+              bgcolor: '#f5f7fa',
               borderRadius: '4px',
               mb: '4px'
             }}>
@@ -1038,6 +1130,7 @@ const PaymentPage = () => {
             {/* Payment Summary */}
             <Box sx={{
               p: '4px',
+              bgcolor: '#f5f7fa',
               borderRadius: '4px',
               mb: '4px'
             }}>
@@ -1088,7 +1181,8 @@ const PaymentPage = () => {
                 severity: "success",
               });
               setOpenPrintDialog(false);
-              navigate(-1)}}
+              navigate(-1)
+            }}
             size="medium"
             variant="outlined"
             sx={{
@@ -1102,22 +1196,14 @@ const PaymentPage = () => {
           >
             Close
           </Button>
-          <Button
-            onClick={handlePrintReceipt}
-            variant="contained"
-            size="medium"
-            startIcon={<PrintIcon sx={{ fontSize: isMobile ? "18px" : "16px" }} />}
-            disabled={isPrinting}
-            sx={{
-              fontSize: isMobile ? "14px" : "12px",
-              minWidth: isMobile ? "120px" : "110px",
-              p: "6px 12px",
-              borderRadius: 2,
-              textTransform: 'none'
-            }}
-          >
-            {isPrinting ? "Printing..." : "Print"}
-          </Button>
+          <DialogActions>
+            <Button onClick={saveAsPDF} variant="outlined">
+              Save as PDF
+            </Button>
+            <Button onClick={handlePrintReceipt} variant="contained">
+              Print Now
+            </Button>
+          </DialogActions>
         </DialogActions>
       </Dialog>
 
@@ -1131,7 +1217,7 @@ const PaymentPage = () => {
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          sx={{ 
+          sx={{
             width: '100%',
             boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
             alignItems: 'center'
