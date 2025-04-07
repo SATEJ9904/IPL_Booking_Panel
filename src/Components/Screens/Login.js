@@ -124,7 +124,6 @@ const Login = ({ onLoginSuccess }) => {
             );
 
             const { token, username } = response.data;
-            console.log(response.data)
             // Validate the token structure before storing
             if (!token || !jwtDecode(token).exp) {
                 throw new Error("Invalid token received");
@@ -336,7 +335,8 @@ const Login = ({ onLoginSuccess }) => {
                                         borderColor: "rgba(255,255,255,0.5)",
                                     },
                                     "&.Mui-focused fieldset": {
-                                        borderColor: "#2196F3",
+                                        borderColor: "#fff",
+                                        color: "#fff"
                                     },
                                 },
                                 "& .MuiInputLabel-root": {
@@ -370,7 +370,8 @@ const Login = ({ onLoginSuccess }) => {
                                         borderColor: "rgba(255,255,255,0.5)",
                                     },
                                     "&.Mui-focused fieldset": {
-                                        borderColor: "#2196F3",
+                                        borderColor: "#fff",
+                                        color: "#fff"
                                     },
                                 },
                                 "& .MuiInputLabel-root": {

@@ -26,7 +26,7 @@ import {
   Chip,
   IconButton,
   Snackbar,
-  Alert
+  Alert,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { styled } from '@mui/material/styles';
@@ -41,7 +41,6 @@ import SRH from "../Images/SRH.png";
 import LSG from "../Images/LSG.png";
 import GT from "../Images/Gujarat.jpg";
 import axios from "axios";
-import { toast } from "react-toastify";
 import SportsCricketIcon from '@mui/icons-material/SportsCricket';
 import SearchIcon from '@mui/icons-material/Search';
 import "react-toastify/dist/ReactToastify.css";
@@ -56,6 +55,8 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import stadiumBg from "../Images/stadium-bg.jpg";
 import ticketPattern from "../Images/ticket-pattern.png";
 import premiumTexture from "../Images/premium-texture.jpg";
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Styled components for premium look
 const PremiumCard = styled(Card)(({ theme }) => ({
@@ -259,6 +260,15 @@ const MatchSlots = () => {
   };
 
   const handleUpdateSlot = async () => {
+    // Calculate time difference in hours
+    const timeDiff = calculateTimeDifference(editingSlot.slotStart, editingSlot.slotEnd);
+    
+    // Validate at least 1 hour gap
+    if (timeDiff < 1) {
+      toast.error("There must be at least 1 hour between start and end times");
+      return null;
+    }
+  
     try {
       const requestData = {
         slotId: editingSlot.slotId,
@@ -269,7 +279,7 @@ const MatchSlots = () => {
         slotStatus: editingSlot.slotStatus,
         packages: editingSlot.packages
       };
-
+  
       const response = await axios.put(
         "https://msfunpark.com/funpark/api/slot/updateSlot",
         requestData,
@@ -277,7 +287,7 @@ const MatchSlots = () => {
           headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
         }
       );
-
+  
       toast.success("Slot updated successfully");
       GetSlots();
       setIsEditSlotDialogOpen(false);
@@ -286,7 +296,6 @@ const MatchSlots = () => {
       toast.error("Failed to update slot");
     }
   };
-
   useEffect(() => {
     GetSlots();
   }, []);
@@ -297,14 +306,23 @@ const MatchSlots = () => {
   }, [matchSlots, tabValue, searchTerm]);
 
   const handleAddSlot = () => {
+    // Calculate time difference in hours
+    const timeDiff = calculateTimeDifference(newMatchSlot.fromTime, newMatchSlot.toTime);
+    
+    // Validate at least 1 hour gap
+    if (timeDiff < 1) {
+      toast.error("There must be at least 1 hour between start and end times");
+      return;
+    }
+  
     const requestData = {
       slotName: `${newMatchSlot.team1}${" VS "}${newMatchSlot.team2}`,
       slotStart: `${newMatchSlot.fromTime}`,
       slotEnd: `${newMatchSlot.toTime}`,
       slotDate: `${newMatchSlot.date}`,
-      slotStatus: "open" // New slots are always open by default
+      slotStatus: "open"
     };
-
+  
     axios
       .post("https://msfunpark.com/funpark/api/slot/create-slot", requestData, {
         headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
@@ -355,6 +373,20 @@ const MatchSlots = () => {
     setSearchTerm(term);
   };
 
+  // Helper function to calculate time difference in hours
+  const calculateTimeDifference = (fromTime, toTime) => {
+    if (!fromTime || !toTime) return null;
+    
+    const [fromHours, fromMinutes] = fromTime.split(':').map(Number);
+    const [toHours, toMinutes] = toTime.split(':').map(Number);
+    
+    const fromTotalMinutes = fromHours * 60 + fromMinutes;
+    const toTotalMinutes = toHours * 60 + toMinutes;
+    
+    const differenceInHours = (toTotalMinutes - fromTotalMinutes) / 60;
+    
+    return differenceInHours;
+  };
   const filterSlots = (tabIndex, searchTerm) => {
     let filtered = [...matchSlots];
 
@@ -440,7 +472,6 @@ const MatchSlots = () => {
         headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` },
       })
       .then((response) => {
-      //  console.log(response.data)
         const formattedSlots = response.data.map((slot) => {
           const [team1, team2] = slot.slotName.split(" VS ");
           return {
@@ -551,6 +582,18 @@ const MatchSlots = () => {
       backgroundSize: 'cover',
       minHeight: '100vh'
     }}>
+        <ToastContainer
+      position="top-center"
+      autoClose={5000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      rtl={false}
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme="colored"
+    />
       {/* Error Snackbar for delete operation */}
       <Snackbar
         open={deleteError}
